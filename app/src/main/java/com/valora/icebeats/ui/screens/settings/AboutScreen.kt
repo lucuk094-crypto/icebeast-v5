@@ -211,7 +211,7 @@ fun AboutScreen(
 
                 // App name
                 Text(
-                    text = "IceBeats",
+                    text = "V-Music",
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -254,7 +254,7 @@ fun AboutScreen(
                     elevation = CardDefaults.cardElevation(0.dp)
                 ) {
                     Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                        InfoRow(label = "Developer", value = "Valora · Zyxone")
+                        InfoRow(label = "Developer", value = "Van-X313")
                         InfoRow(label = "Version", value = BuildConfig.VERSION_NAME)
                         InfoRow(label = "Build", value = if (BuildConfig.DEBUG) "Debug" else "Release")
                         InfoRow(label = "Package", value = "com.valora.icebeats", isLast = true)
@@ -288,7 +288,7 @@ fun AboutScreen(
                         SocialLinkButton(
                             label = "Website",
                             iconRes = R.drawable.resource_public,
-                            onClick = { uriHandler.openUri("https://icebeats.pages.dev/") }
+                            onClick = { uriHandler.openUri("https://github.com/lucuk094-crypto/icebeast") }
                         )
                         Box(
                             modifier = Modifier
@@ -300,31 +300,7 @@ fun AboutScreen(
                         SocialLinkButton(
                             label = "GitHub",
                             iconRes = R.drawable.github,
-                            onClick = { uriHandler.openUri("https://icebeats.pages.dev/") }
-                        )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(0.5.dp)
-                                .padding(start = 72.dp, end = 20.dp)
-                                .background(Color.White.copy(alpha = 0.06f))
-                        )
-                        SocialLinkButton(
-                            label = "Telegram",
-                            iconRes = R.drawable.telegram,
-                            onClick = { uriHandler.openUri("https://t.me/Riz_BuyX") }
-                        )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(0.5.dp)
-                                .padding(start = 72.dp, end = 20.dp)
-                                .background(Color.White.copy(alpha = 0.06f))
-                        )
-                        SocialLinkButton(
-                            label = "Instagram",
-                            iconRes = R.drawable.instagram,
-                            onClick = { uriHandler.openUri("https://instagram.com/rizal_fbrian") }
+                            onClick = { uriHandler.openUri("https://github.com/lucuk094-crypto/icebeast") }
                         )
                     }
                 }
@@ -333,7 +309,7 @@ fun AboutScreen(
 
                 // Footer
                 Text(
-                    text = "Made with ♥ by Valora & Zyxone",
+                    text = "Made with ♥ by Van-X313",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.25f)
                 )

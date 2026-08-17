@@ -1,15 +1,13 @@
-# IceBeats
+# V-Music
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/B7ByteMe/IceBeats/refs/heads/main/icon2.png" alt="IceBeats Preview" width="200"/>
+  <img src="https://raw.githubusercontent.com/B7ByteMe/IceBeats/refs/heads/main/icon2.png" alt="V-Music Preview" width="200"/>
   
   <h3>Advanced YouTube Music Client with Material Design 3 for Android</h3>
+  <i>Maintained by Van-X313</i>
   
-  [![Latest Release](https://img.shields.io/github/v/release/B7ByteMe/IceBeats?style=flat-square&logo=github&color=0D1117&labelColor=161B22)](https://github.com/B7ByteMe/IceBeats/releases)
-  [![License](https://img.shields.io/github/license/B7ByteMe/IceBeats?style=flat-square&logo=gnu&color=2B3137&labelColor=161B22)](https://github.com/B7ByteMe/IceBeats/blob/main/LICENSE)
+  [![License](https://img.shields.io/github/license/lucuk094-crypto/icebeast?style=flat-square&logo=gnu&color=2B3137&labelColor=161B22)](https://github.com/lucuk094-crypto/icebeast/blob/main/LICENSE)
   [![Android](https://img.shields.io/badge/Platform-Android%206.0+-3DDC84.svg?style=flat-square&logo=android&logoColor=white&labelColor=161B22)](https://www.android.com)
-  [![Stars](https://img.shields.io/github/stars/B7ByteMe/IceBeats?style=flat-square&logo=github&color=yellow&labelColor=161B22)](https://github.com/B7ByteMe/IceBeats/stargazers)
-  [![Forks](https://img.shields.io/github/forks/B7ByteMe/IceBeats?style=flat-square&logo=github&color=blue&labelColor=161B22)](https://github.com/B7ByteMe/IceBeats/network/members)
 </div>
 
 ---
@@ -30,7 +28,7 @@
 
 ## Overview
 
-**IceBeats** is an open-source YouTube Music client specifically designed for Android devices. It delivers a superior user experience with a modern interface implementing Material Design 3, offering advanced functionalities to explore, play, and manage musical content without the limitations of the official application.
+**V-Music** is an open-source YouTube Music client specifically designed for Android devices. It delivers a superior user experience with a modern interface implementing Material Design 3, offering advanced functionalities to explore, play, and manage musical content without the limitations of the official application.
 
 ### Key Benefits
 
@@ -40,7 +38,7 @@
 - **Customizable Interface**: Personalize your music experience
 - **Offline Capabilities**: Download and play music without internet connection
 
-> **Note**: IceBeats is an independent project and is not affiliated, sponsored, or endorsed by YouTube or Google.
+> **Note**: V-Music is an independent project and is not affiliated, sponsored, or endorsed by YouTube or Google.
 
 ---
 

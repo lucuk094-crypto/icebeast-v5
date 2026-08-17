@@ -999,7 +999,7 @@ fun ProfileSection(
                             .padding(horizontal = 12.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = "DEV BY VALORA, ZYXONE",
+                            text = "DEV BY VAN-X313",
                             color = Color.White.copy(alpha = 0.5f),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,

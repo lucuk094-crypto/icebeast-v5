@@ -1,20 +1,18 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/B7ByteMe/IceBeats/refs/heads/main/icon2.png" width="200" alt="IceBeats Logo" />
+  <img src="https://raw.githubusercontent.com/B7ByteMe/IceBeats/refs/heads/main/icon2.png" width="200" alt="V-Music Logo" />
 </p>
 
-<h1 align="center">IceBeats</h1>
+<h1 align="center">V-Music</h1>
 
 <p align="center">
   <b>Advanced YouTube Music Client for Android</b><br/>
-  <i>Built & maintained by Valora · Zyxone</i>
+  <i>Built & maintained by Van-X313</i>
 </p>
 
 <div align="center">
 
-[![Latest Release](https://img.shields.io/github/v/release/B7ByteMe/IceBeats?style=for-the-badge&logo=github&color=0D1117&labelColor=161B22)](https://github.com/B7ByteMe/IceBeats/releases)
-[![License](https://img.shields.io/github/license/B7ByteMe/IceBeats?style=for-the-badge&logo=gnu&color=2B3137&labelColor=161B22)](https://github.com/B7ByteMe/IceBeats/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/lucuk094-crypto/icebeast?style=for-the-badge&logo=gnu&color=2B3137&labelColor=161B22)](https://github.com/lucuk094-crypto/icebeast/blob/main/LICENSE)
 [![Android](https://img.shields.io/badge/Platform-Android%206.0+-3DDC84.svg?style=for-the-badge&logo=android&logoColor=white&labelColor=161B22)](https://www.android.com)
-[![Stars](https://img.shields.io/github/stars/B7ByteMe/IceBeats?style=for-the-badge&logo=github&labelColor=161B22)](https://github.com/B7ByteMe/IceBeats/stargazers)
 
 </div>
 
@@ -40,9 +38,9 @@
 <table>
   <tr>
     <td align="center">
-      <b>Valora · Zyxone</b><br/>
+      <b>Van-X313</b><br/>
       Android Developer<br/>
-      <a href="https://github.com/B7ByteMe">GitHub</a>
+      <a href="https://github.com/lucuk094-crypto/icebeast">GitHub</a>
     </td>
   </tr>
 </table>

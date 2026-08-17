@@ -15,7 +15,7 @@ plugins {
 }
 
 
-rootProject.name = "IceBeats"
+rootProject.name = "V-Music"
 include(":app")
 include(":innertube")
 include(":kugou")
