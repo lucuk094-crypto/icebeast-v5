@@ -1,0 +1,123 @@
+/* ==========================================================================
+   IceBeats Web — Synchronized Live Karaoke Lyrics Styles
+   ========================================================================== */
+
+.lyrics-view-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.lyrics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 1rem;
+  flex-shrink: 0;
+}
+
+.lyrics-source-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+}
+
+.lyrics-scroll-box {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 0.5rem;
+  scroll-behavior: smooth;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+}
+
+.lyrics-scroll-box::-webkit-scrollbar {
+  width: 4px;
+}
+
+.lyrics-scroll-box::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
+}
+
+.lyrics-lines-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+  padding: 50% 0; /* Padding for smooth center alignment */
+}
+
+/* Individual Lyric Line */
+.lyric-line {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.32);
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  transform-origin: left center;
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.6rem;
+  user-select: none;
+}
+
+.lyric-line:hover {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Active Highlighted Lyric (Current Singing Line) */
+.lyric-line.active {
+  color: #ffffff;
+  font-size: 1.65rem;
+  font-weight: 800;
+  transform: scale(1.04);
+  text-shadow: 0 0 25px var(--accent-glow), 0 2px 8px rgba(0, 0, 0, 0.8);
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.18) 0%, transparent 100%);
+}
+
+/* Past Lyric Lines */
+.lyric-line.passed {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* Loading & Empty States */
+.lyrics-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: var(--text-muted);
+  gap: 1rem;
+  padding: 3rem 1rem;
+}
+
+.lyrics-loading-state i {
+  width: 42px;
+  height: 42px;
+  color: var(--accent);
+  animation: pulseMic 1.8s infinite ease-in-out;
+}
+
+@keyframes pulseMic {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 12px var(--accent)); }
+}
+
+.lyrics-plain-text {
+  white-space: pre-wrap;
+  font-size: 1.15rem;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  font-weight: 500;
+}

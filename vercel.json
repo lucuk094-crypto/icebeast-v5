@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "public": true,
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/web/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/web/$1"
+    }
+  ]
+}

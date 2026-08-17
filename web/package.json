@@ -1,0 +1,13 @@
+{
+  "name": "icebeats-web",
+  "version": "1.0.0",
+  "description": "IceBeats Web - Advanced YouTube Music Client & Player",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve ."
+  },
+  "keywords": ["music", "player", "youtube-music", "icebeats", "lyrics", "audio"],
+  "author": "Valora · Zyxone",
+  "license": "GPL-3.0"
+}

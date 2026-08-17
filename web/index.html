@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>IceBeats Web — Advanced Music Player & Streaming</title>
+  <meta name="description" content="IceBeats Web - Pemutar musik modern berkecepatan tinggi dengan sinkronisasi lirik real-time, audio visualizer, dan jutaan lagu YouTube Music gratis.">
+  <meta name="theme-color" content="#0d1117">
+  
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:title" content="IceBeats Web">
+  <meta property="og:description" content="Advanced YouTube Music Client & Player for Web">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://raw.githubusercontent.com/B7ByteMe/IceBeats/refs/heads/main/icon2.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/B7ByteMe/IceBeats/refs/heads/main/icon2.png">
+
+  <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/player.css">
+  <link rel="stylesheet" href="css/lyrics.css">
+</head>
+<body data-theme="frost">
+  <!-- Dynamic Atmospheric Glow Background -->
+  <div id="ambient-glow" class="ambient-glow"></div>
+  <canvas id="visualizer-canvas" class="visualizer-canvas"></canvas>
+
+  <div class="app-layout">
+    <!-- LEFT SIDEBAR NAVIGATION -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-logo-container">
+          <img src="https://raw.githubusercontent.com/B7ByteMe/IceBeats/refs/heads/main/icon2.png" alt="IceBeats Logo" class="brand-logo">
+          <div class="brand-glow"></div>
+        </div>
+        <div class="brand-info">
+          <h1 class="brand-title">IceBeats</h1>
+          <span class="brand-badge">WEB V6</span>
+        </div>
+        <button class="icon-btn mobile-close-sidebar" id="close-sidebar-btn" aria-label="Tutup Menu">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <nav class="nav-menu">
+        <div class="nav-section-label">JELAJAHI</div>
+        <a href="#home" class="nav-link active" data-nav="home">
+          <i data-lucide="home"></i>
+          <span>Beranda</span>
+        </a>
+        <a href="#explore" class="nav-link" data-nav="explore">
+          <i data-lucide="compass"></i>
+          <span>Eksplorasi & Chart</span>
+        </a>
+        <a href="#search" class="nav-link" data-nav="search">
+          <i data-lucide="search"></i>
+          <span>Pencarian</span>
+        </a>
+
+        <div class="nav-section-label">KOLEKSI SAYA</div>
+        <a href="#favorites" class="nav-link" data-nav="favorites">
+          <i data-lucide="heart" class="heart-icon"></i>
+          <span>Lagu Favorit</span>
+          <span class="nav-counter" id="favorites-count">0</span>
+        </a>
+        <a href="#history" class="nav-link" data-nav="history">
+          <i data-lucide="history"></i>
+          <span>Riwayat Putar</span>
+        </a>
+        <a href="#playlists" class="nav-link" data-nav="playlists">
+          <i data-lucide="list-music"></i>
+          <span>Playlist Saya</span>
+        </a>
+        <a href="#local-files" class="nav-link" data-nav="local-files">
+          <i data-lucide="folder-audio"></i>
+          <span>File Audio Lokal</span>
+        </a>
+
+        <div class="nav-section-label">PREFERENSI</div>
+        <a href="#settings" class="nav-link" data-nav="settings">
+          <i data-lucide="sliders"></i>
+          <span>Pengaturan & Tema</span>
+        </a>
+      </nav>
+
+      <!-- Mini Playing Card in Sidebar -->
+      <div class="sidebar-now-playing" id="sidebar-now-playing" style="display: none;">
+        <div class="sidebar-np-art-wrap">
+          <img id="sidebar-np-cover" src="https://raw.githubusercontent.com/B7ByteMe/IceBeats/refs/heads/main/icon2.png" alt="Cover" class="sidebar-np-cover">
+          <div class="playing-bars">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="sidebar-np-meta">
+          <span class="sidebar-np-title" id="sidebar-np-title">Judul Lagu</span>
+          <span class="sidebar-np-artist" id="sidebar-np-artist">Artis</span>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-profile-widget">
+          <div class="user-avatar-pill">
+            <i data-lucide="user"></i>
+          </div>
+          <div class="user-meta">
+            <span class="user-name">IceBeats User</span>
+            <span class="user-status">Online • High Quality</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN APP CONTENT -->
+    <main class="main-content" id="main-content">
+      <!-- TOP HEADER BAR -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="icon-btn mobile-menu-btn" id="mobile-menu-btn" aria-label="Buka Menu">
+            <i data-lucide="menu"></i>
+          </button>
+          
+          <!-- Unified Search Bar -->
+          <div class="search-box-header" id="search-box-header">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="global-search-input" placeholder="Cari lagu, artis, lirik, atau album..." autocomplete="off">
+            <button class="clear-search-btn" id="clear-search-btn" style="display: none;" aria-label="Hapus Pencarian">
+              <i data-lucide="x"></i>
+            </button>
+            
+            <!-- Quick Search Dropdown / Autocomplete -->
+            <div class="search-suggestions-dropdown" id="search-suggestions" style="display: none;">
+              <!-- Dynamic suggestions inserted via JS -->
+            </div>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <!-- Theme Switcher Selector -->
+          <div class="theme-selector-wrap">
+            <button class="theme-pill-btn" id="theme-menu-btn" title="Pilih Gaya Tampilan">
+              <i data-lucide="sparkles"></i>
+              <span id="current-theme-label">Frost Glass</span>
+              <i data-lucide="chevron-down" class="chevron-icon"></i>
+            </button>
+            <div class="theme-dropdown-menu" id="theme-dropdown" style="display: none;">
+              <button class="theme-opt active" data-set-theme="frost">
+                <span class="theme-swatch frost-swatch"></span>
+                <span>Frost Glass (Default)</span>
+              </button>
+              <button class="theme-opt" data-set-theme="galaxy">
+                <span class="theme-swatch galaxy-swatch"></span>
+                <span>Galaxy Nebula</span>
+              </button>
+              <button class="theme-opt" data-set-theme="neon">
+                <span class="theme-swatch neon-swatch"></span>
+                <span>Neon Cyberpunk</span>
+              </button>
+              <button class="theme-opt" data-set-theme="charcoal">
+                <span class="theme-swatch charcoal-swatch"></span>
+                <span>AMOLED Charcoal</span>
+              </button>
+              <button class="theme-opt" data-set-theme="spotify">
+                <span class="theme-swatch spotify-swatch"></span>
+                <span>Spotify Dark Green</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Shortcuts Info Button -->
+          <button class="icon-btn header-action-btn" id="shortcuts-btn" title="Pintasan Keyboard (Hotkeys)">
+            <i data-lucide="keyboard"></i>
+          </button>
+
+          <!-- Sleep Timer Button -->
+          <button class="icon-btn header-action-btn" id="sleep-timer-btn" title="Sleep Timer">
+            <i data-lucide="moon"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- VIEWS CONTAINER -->
+      <div class="view-viewport" id="view-viewport">
+
+        <!-- 1. HOME VIEW -->
+        <section class="view-section active" id="view-home">
+          <!-- Hero Carousel Banner -->
+          <div class="hero-carousel-container" id="hero-carousel">
+            <div class="hero-carousel-track" id="hero-track">
+              <!-- Rendered via JS -->
+            </div>
+            <div class="hero-carousel-dots" id="hero-dots"></div>
+          </div>
+
+          <!-- Moods & Genres Filter Pills -->
+          <div class="section-container">
+            <div class="mood-chips-scroll" id="mood-chips">
+              <button class="chip active" data-genre="all">🔥 Semua</button>
+              <button class="chip" data-genre="indonesian pop">🇮🇩 Indo Hits</button>
+              <button class="chip" data-genre="pop hits 2025">✨ Global Hits</button>
+              <button class="chip" data-genre="lofi hip hop chill">☕ Lo-Fi & Chill</button>
+              <button class="chip" data-genre="kpop trends">🌸 K-Pop</button>
+              <button class="chip" data-genre="rock classic hits">🎸 Rock</button>
+              <button class="chip" data-genre="electronic dance edm">⚡ Electronic / EDM</button>
+              <button class="chip" data-genre="acoustic relaxing">🍃 Acoustic</button>
+              <button class="chip" data-genre="gaming music no copyright">🎮 Gaming Bass</button>
+            </div>
+          </div>
+
+          <!-- Quick Picks Section -->
+          <div class="section-container">
+            <div class="section-header">
+              <div>
+                <h2 class="section-title">Pilihan Cepat & Populer</h2>
+                <p class="section-subtitle">Lagu pilihan favorit dengan audio kualitas terbaik</p>
+              </div>
+              <button class="btn-text-link" id="play-all-quick-picks">
+                <i data-lucide="play-circle"></i> Putar Semua
+              </button>
+            </div>
+            <div class="grid-music-cards" id="quick-picks-grid">
+              <!-- Injected by musicApi.js -->
+            </div>
+          </div>
+
+          <!-- Trending Charts Shelf -->
+          <div class="section-container">
+            <div class="section-header">
+              <div>
+                <h2 class="section-title">🔥 Tangga Lagu Teratas (Top Charts)</h2>
+                <p class="section-subtitle">Lagu paling banyak didengarkan minggu ini</p>
+              </div>
+              <button class="btn-text-link" data-nav="explore">Lihat Semua Chart</button>
+            </div>
+            <div class="horizontal-scroll-shelf" id="trending-shelf">
+              <!-- Injected by musicApi.js -->
+            </div>
+          </div>
+
+          <!-- Featured Artists Shelf -->
+          <div class="section-container">
+            <div class="section-header">
+              <div>
+                <h2 class="section-title">Artis Paling Populer</h2>
+                <p class="section-subtitle">Dengarkan koleksi terbaik dari artis favorit Anda</p>
+              </div>
+            </div>
+            <div class="horizontal-scroll-shelf artist-shelf" id="top-artists-shelf">
+              <!-- Injected by musicApi.js -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. EXPLORE VIEW -->
+        <section class="view-section" id="view-explore">
+          <div class="section-container">
+            <h2 class="section-title">Eksplorasi Musik & Genre</h2>
+            <p class="section-subtitle">Temukan lagu baru berdasarkan suasana hati, aktivitas, dan genre</p>
+
+            <div class="genre-cards-grid" id="explore-genre-grid">
+              <!-- Category cards -->
+            </div>
+          </div>
+
+          <div class="section-container">
+            <div class="section-header">
+              <h2 class="section-title">Top 100 Chart Dunia</h2>
+            </div>
+            <div class="songs-list-view" id="explore-top100-list">
+              <!-- Top 100 tracks list -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. SEARCH VIEW -->
+        <section class="view-section" id="view-search">
+          <div class="section-container">
+            <div class="search-filter-tabs" id="search-filter-tabs">
+              <button class="filter-tab active" data-filter="all">Semua</button>
+              <button class="filter-tab" data-filter="songs">Lagu</button>
+              <button class="filter-tab" data-filter="artists">Artis</button>
+              <button class="filter-tab" data-filter="albums">Album</button>
+              <button class="filter-tab" data-filter="playlists">Playlist</button>
+            </div>
+
+            <div class="search-status-bar" id="search-status-bar" style="display: none;">
+              <span id="search-query-label">Hasil untuk "..."</span>
+              <span id="search-count-label"></span>
+            </div>
+
+            <div class="search-results-container" id="search-results-container">
+              <!-- Search Results rendered here -->
+              <div class="empty-search-placeholder">
+                <i data-lucide="search" class="large-placeholder-icon"></i>
+                <h3>Ketik judul lagu, artis, atau album di atas</h3>
+                <p>Jutaan lagu YouTube Music & sinkronisasi lirik siap dimainkan</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. FAVORITES VIEW -->
+        <section class="view-section" id="view-favorites">
+          <div class="section-container">
+            <div class="library-header-banner">
+              <div class="library-art-banner heart-banner">
+                <i data-lucide="heart"></i>
+              </div>
+              <div class="library-info-banner">
+                <span class="lib-tag">PLAYLIST OTOMATIS</span>
+                <h2 class="lib-title">Lagu yang Disukai (Favorites)</h2>
+                <p class="lib-meta" id="fav-count-meta">0 Lagu • Tersimpan di Browser</p>
+                <div class="lib-actions">
+                  <button class="btn-primary" id="play-all-favorites">
+                    <i data-lucide="play"></i> Putar Favorit
+                  </button>
+                  <button class="btn-secondary" id="shuffle-favorites">
+                    <i data-lucide="shuffle"></i> Acak
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="songs-list-view" id="favorites-list">
+              <!-- Injected by database.js -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. HISTORY VIEW -->
+        <section class="view-section" id="view-history">
+          <div class="section-container">
+            <div class="section-header">
+              <div>
+                <h2 class="section-title">Riwayat Pemutaran</h2>
+                <p class="section-subtitle">Daftar lagu yang baru saja Anda dengarkan</p>
+              </div>
+              <button class="btn-outline-danger" id="clear-history-btn">
+                <i data-lucide="trash-2"></i> Hapus Riwayat
+              </button>
+            </div>
+            <div class="songs-list-view" id="history-list">
+              <!-- Injected by database.js -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. PLAYLISTS VIEW -->
+        <section class="view-section" id="view-playlists">
+          <div class="section-container">
+            <div class="section-header">
+              <div>
+                <h2 class="section-title">Playlist Saya</h2>
+                <p class="section-subtitle">Kelola dan dengarkan playlist kustom buatan Anda</p>
+              </div>
+              <button class="btn-primary" id="create-playlist-btn">
+                <i data-lucide="plus"></i> Buat Playlist Baru
+              </button>
+            </div>
+            <div class="playlists-grid" id="playlists-grid">
+              <!-- Custom playlists -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. LOCAL FILES VIEW -->
+        <section class="view-section" id="view-local-files">
+          <div class="section-container">
+            <div class="local-dropzone" id="local-dropzone">
+              <i data-lucide="upload-cloud" class="dropzone-icon"></i>
+              <h3>Seret & Lepas File Musik di Sini</h3>
+              <p>Mendukung format MP3, WAV, FLAC, M4A, OGG, AAC dari perangkat Anda</p>
+              <label class="btn-primary" for="local-file-input">
+                <i data-lucide="folder-open"></i> Pilih File Dari Komputer/HP
+              </label>
+              <input type="file" id="local-file-input" multiple accept="audio/*" style="display: none;">
+            </div>
+
+            <div class="songs-list-view" id="local-files-list" style="margin-top: 2rem;">
+              <!-- Local audio items -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 8. SETTINGS VIEW -->
+        <section class="view-section" id="view-settings">
+          <div class="section-container settings-container">
+            <h2 class="section-title">Pengaturan & Preferensi</h2>
+            
+            <div class="settings-card">
+              <h3>Tampilan & Tema Visual</h3>
+              <div class="settings-item">
+                <div>
+                  <strong>Tema Player</strong>
+                  <p>Pilih gaya tampilan pemutar musik yang Anda sukai</p>
+                </div>
+                <select id="settings-theme-select" class="custom-select">
+                  <option value="frost">Frost Glassmorphism</option>
+                  <option value="galaxy">Galaxy Nebula Aurora</option>
+                  <option value="neon">Neon Cyberpunk</option>
+                  <option value="charcoal">AMOLED Charcoal Dark</option>
+                  <option value="spotify">Spotify Deep Green</option>
+                </select>
+              </div>
+              <div class="settings-item">
+                <div>
+                  <strong>Background Visualizer Canvas</strong>
+                  <p>Tampilkan efek gelombang/spektrum audio bergerak di latar belakang</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-visualizer" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="settings-item">
+                <div>
+                  <strong>Aura Warna Dinamis Mengikuti Cover Album</strong>
+                  <p>Mengubah warna aksen latar secara otomatis sesuai warna sampul lagu</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-dynamic-color" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-card">
+              <h3>Audio & Pemutaran</h3>
+              <div class="settings-item">
+                <div>
+                  <strong>Kualitas Streaming</strong>
+                  <p>Pilih prioritas kualitas audio stream</p>
+                </div>
+                <select id="settings-audio-quality" class="custom-select">
+                  <option value="high">Tinggi (High Quality 256kbps)</option>
+                  <option value="medium" selected>Standar (Auto Adaptive)</option>
+                  <option value="low">Hemat Data (Mobile Data)</option>
+                </select>
+              </div>
+              <div class="settings-item">
+                <div>
+                  <strong>Autoplay Lagu Terkait</strong>
+                  <p>Secara otomatis memutar rekomendasi lagu serupa saat antrean selesai</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-autoplay" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="settings-item">
+                <div>
+                  <strong>Kecepatan Pemutaran Default</strong>
+                </div>
+                <select id="settings-playback-speed" class="custom-select">
+                  <option value="0.75">0.75x</option>
+                  <option value="1.0" selected>1.0x (Normal)</option>
+                  <option value="1.25">1.25x</option>
+                  <option value="1.5">1.5x</option>
+                  <option value="2.0">2.0x</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="settings-card">
+              <h3>Penyimpanan Data Lokal</h3>
+              <div class="settings-item">
+                <div>
+                  <strong>Reset Database Lokal</strong>
+                  <p>Hapus semua lagu favorit, riwayat, dan playlist tersimpan dari browser</p>
+                </div>
+                <button class="btn-outline-danger" id="reset-db-btn">Reset Data</button>
+              </div>
+            </div>
+
+            <div class="settings-card about-card">
+              <div class="about-brand">
+                <img src="https://raw.githubusercontent.com/B7ByteMe/IceBeats/refs/heads/main/icon2.png" alt="IceBeats" width="64">
+                <div>
+                  <h3>IceBeats Web Edition</h3>
+                  <p>Version 6.0.3 (Web Architecture)</p>
+                  <p class="about-credit">Built with ❤️ inspired by IceBeats, InnerTune & LRCLIB</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- RIGHT QUEUE / UP NEXT DRAWER -->
+    <aside class="queue-drawer" id="queue-drawer">
+      <div class="queue-header">
+        <div class="queue-title-wrap">
+          <i data-lucide="list-music"></i>
+          <h3>Antrean Lagu (Queue)</h3>
+          <span class="queue-count-badge" id="queue-count-badge">0</span>
+        </div>
+        <div class="queue-actions">
+          <button class="icon-btn" id="clear-queue-btn" title="Kosongkan Antrean">
+            <i data-lucide="trash-2"></i>
+          </button>
+          <button class="icon-btn" id="close-queue-btn" title="Tutup Antrean">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="queue-now-playing-card" id="queue-current-card">
+        <span class="q-label">SEDANG DIPUTAR</span>
+        <div class="q-track-row">
+          <img id="q-thumb" src="https://raw.githubusercontent.com/B7ByteMe/IceBeats/refs/heads/main/icon2.png" alt="Thumb">
+          <div class="q-meta">
+            <span class="q-title" id="q-title">Tidak ada lagu</span>
+            <span class="q-artist" id="q-artist">Pilih lagu untuk memutar</span>
+          </div>
+          <div class="playing-bars active">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="queue-section-label">BERIKUTNYA (UP NEXT)</div>
+      <div class="queue-items-list" id="queue-list">
+        <!-- Queue items injected via JS -->
+      </div>
+    </aside>
+  </div>
+
+  <!-- STICKY MINI PLAYER BAR (BOTTOM) -->
+  <div class="mini-player-bar" id="mini-player-bar">
+    <!-- Mini Progress Bar along the top border -->
+    <div class="mini-progress-track" id="mini-progress-track">
+      <div class="mini-progress-fill" id="mini-progress-fill"></div>
+    </div>
+
+    <div class="mini-player-inner">
+      <!-- Track Details Left -->
+      <div class="mp-track-info" id="open-full-player-trigger" title="Klik untuk membuka pemutar layar penuh">
+        <div class="mp-art-wrap">
+          <img id="mp-cover" src="https://raw.githubusercontent.com/B7ByteMe/IceBeats/refs/heads/main/icon2.png" alt="Cover" class="mp-cover">
+          <div class="mp-art-overlay">
+            <i data-lucide="maximize-2"></i>
+          </div>
+        </div>
+        <div class="mp-meta">
+          <span class="mp-title" id="mp-title">IceBeats Music Player</span>
+          <span class="mp-artist" id="mp-artist">Pilih lagu untuk memulai</span>
+        </div>
+        <button class="icon-btn fav-btn" id="mp-fav-btn" title="Sukai Lagu" aria-label="Sukai Lagu">
+          <i data-lucide="heart"></i>
+        </button>
+      </div>
+
+      <!-- Main Controls Center -->
+      <div class="mp-controls-center">
+        <div class="mp-buttons-row">
+          <button class="icon-btn ctrl-btn" id="shuffle-btn" title="Acak (Shuffle)">
+            <i data-lucide="shuffle"></i>
+          </button>
+          <button class="icon-btn ctrl-btn" id="prev-btn" title="Sebelumnya (Previous)">
+            <i data-lucide="skip-back"></i>
+          </button>
+          <button class="play-pause-circle-btn" id="play-pause-btn" title="Play / Pause">
+            <i data-lucide="play" id="play-pause-icon"></i>
+          </button>
+          <button class="icon-btn ctrl-btn" id="next-btn" title="Berikutnya (Next)">
+            <i data-lucide="skip-forward"></i>
+          </button>
+          <button class="icon-btn ctrl-btn" id="repeat-btn" title="Ulangi (Repeat)">
+            <i data-lucide="repeat"></i>
+          </button>
+        </div>
+
+        <div class="mp-scrubber-row">
+          <span class="time-label" id="current-time-label">0:00</span>
+          <div class="seek-slider-wrap" id="seek-slider-wrap">
+            <div class="seek-slider-track">
+              <div class="seek-slider-buffered" id="buffered-bar"></div>
+              <div class="seek-slider-fill" id="seek-fill"></div>
+              <div class="seek-slider-thumb" id="seek-thumb"></div>
+            </div>
+            <input type="range" id="seek-slider" min="0" max="100" value="0" step="0.1" aria-label="Posisi Durasi Musik">
+          </div>
+          <span class="time-label" id="total-duration-label">0:00</span>
+        </div>
+      </div>
+
+      <!-- Secondary Controls Right -->
+      <div class="mp-controls-right">
+        <button class="icon-btn toggle-lyrics-btn" id="toggle-lyrics-btn" title="Lirik Lagu (Karaoke)">
+          <i data-lucide="mic-2"></i>
+          <span class="btn-badge-dot" style="display: none;"></span>
+        </button>
+
+        <button class="icon-btn toggle-queue-btn" id="toggle-queue-btn" title="Daftar Antrean">
+          <i data-lucide="list-music"></i>
+        </button>
+
+        <div class="volume-control-wrap">
+          <button class="icon-btn" id="mute-btn" title="Mute / Unmute">
+            <i data-lucide="volume-2" id="volume-icon"></i>
+          </button>
+          <div class="volume-slider-wrap">
+            <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.9" aria-label="Pengatur Volume">
+          </div>
+        </div>
+
+        <button class="icon-btn expand-player-btn" id="expand-player-btn" title="Fullscreen Player">
+          <i data-lucide="chevron-up"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULLSCREEN / ADAPTIVE PLAYER MODAL -->
+  <div class="full-player-overlay" id="full-player-overlay">
+    <div class="full-player-backdrop" id="fp-backdrop"></div>
+    
+    <!-- Top Header in Full Player -->
+    <div class="fp-header">
+      <button class="icon-btn fp-collapse-btn" id="collapse-full-player-btn" title="Tutup">
+        <i data-lucide="chevron-down"></i>
+      </button>
+      <div class="fp-header-title">
+        <span class="fp-playing-from">MEMUTAR DARI YOUTUBE MUSIC</span>
+        <span class="fp-source-name" id="fp-source-name">IceBeats Engine</span>
+      </div>
+      <div class="fp-header-actions">
+        <button class="icon-btn" id="fp-theme-btn" title="Ganti Gaya Player">
+          <i data-lucide="sparkles"></i>
+        </button>
+        <button class="icon-btn" id="fp-sleep-btn" title="Sleep Timer">
+          <i data-lucide="moon"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Full Player Body Layout (Left: Artwork/Vinyl, Right: Lyrics/Queue) -->
+    <div class="fp-body">
+      <!-- Art & Main Info Column -->
+      <div class="fp-art-column">
+        <div class="fp-art-wrapper" id="fp-art-wrapper">
+          <div class="fp-art-glow" id="fp-art-glow"></div>
+          <img id="fp-cover" src="https://raw.githubusercontent.com/B7ByteMe/IceBeats/refs/heads/main/icon2.png" alt="Cover" class="fp-cover-img">
+          <div class="vinyl-disc" id="vinyl-disc"></div>
+        </div>
+
+        <div class="fp-track-meta">
+          <div class="fp-meta-text">
+            <h2 class="fp-title" id="fp-title">IceBeats Web</h2>
+            <p class="fp-artist" id="fp-artist">Pilih lagu untuk memulai</p>
+          </div>
+          <button class="icon-btn fav-btn fp-fav-btn" id="fp-fav-btn" title="Sukai Lagu">
+            <i data-lucide="heart"></i>
+          </button>
+        </div>
+
+        <!-- Full Player Scrubber Slider -->
+        <div class="fp-scrubber-section">
+          <div class="fp-seek-wrap">
+            <input type="range" id="fp-seek-slider" min="0" max="100" value="0" step="0.1" aria-label="Durasi Full Player">
+            <div class="fp-seek-progress" id="fp-seek-progress"></div>
+          </div>
+          <div class="fp-time-row">
+            <span id="fp-curr-time">0:00</span>
+            <span id="fp-total-time">0:00</span>
+          </div>
+        </div>
+
+        <!-- Full Player Controls -->
+        <div class="fp-controls-row">
+          <button class="icon-btn fp-ctrl" id="fp-shuffle-btn" title="Acak">
+            <i data-lucide="shuffle"></i>
+          </button>
+          <button class="icon-btn fp-ctrl" id="fp-prev-btn" title="Sebelumnya">
+            <i data-lucide="skip-back"></i>
+          </button>
+          <button class="fp-play-btn" id="fp-play-pause-btn" title="Play/Pause">
+            <i data-lucide="play" id="fp-play-icon"></i>
+          </button>
+          <button class="icon-btn fp-ctrl" id="fp-next-btn" title="Berikutnya">
+            <i data-lucide="skip-forward"></i>
+          </button>
+          <button class="icon-btn fp-ctrl" id="fp-repeat-btn" title="Ulangi">
+            <i data-lucide="repeat"></i>
+          </button>
+        </div>
+
+        <!-- Full Player Extra Bottom Bar -->
+        <div class="fp-extra-bar">
+          <button class="fp-tab-toggle active" id="fp-view-lyrics-tab">
+            <i data-lucide="mic-2"></i> Lirik Sinkron
+          </button>
+          <button class="fp-tab-toggle" id="fp-view-queue-tab">
+            <i data-lucide="list-music"></i> Antrean
+          </button>
+          <button class="fp-tab-toggle" id="fp-speed-btn">
+            <i data-lucide="gauge"></i> <span id="fp-speed-label">1.0x</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Column: Real-time Synced Karaoke Lyrics & Up Next -->
+      <div class="fp-side-column">
+        <!-- Live Lyrics Container -->
+        <div class="lyrics-view-container" id="lyrics-view-container">
+          <div class="lyrics-header">
+            <div class="lyrics-source-badge">
+              <i data-lucide="music"></i>
+              <span id="lyrics-provider-label">LRCLIB Sync Live</span>
+            </div>
+            <button class="icon-btn" id="copy-lyrics-btn" title="Salin Lirik">
+              <i data-lucide="copy"></i>
+            </button>
+          </div>
+          
+          <div class="lyrics-scroll-box" id="lyrics-scroll-box">
+            <div class="lyrics-loading-state" id="lyrics-status">
+              <i data-lucide="mic"></i>
+              <p>Mencari lirik sinkron...</p>
+            </div>
+            <div class="lyrics-lines-wrapper" id="lyrics-lines-wrapper">
+              <!-- Synchronized karaoke lines injected here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Inline Queue in Fullscreen View -->
+        <div class="fp-inline-queue" id="fp-inline-queue" style="display: none;">
+          <h3>Antrean Lagu Berikutnya</h3>
+          <div class="fp-inline-queue-list" id="fp-inline-queue-list">
+            <!-- Queue items -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- MODAL: CREATE PLAYLIST -->
+  <div class="modal-backdrop" id="create-playlist-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Buat Playlist Baru</h3>
+        <button class="icon-btn modal-close-btn" data-close-modal="create-playlist-modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="playlist-name-input">Nama Playlist</label>
+          <input type="text" id="playlist-name-input" placeholder="Misal: Lagu Favorit Senja, Workout Vibe...">
+        </div>
+        <div class="form-group">
+          <label for="playlist-desc-input">Deskripsi (Opsional)</label>
+          <textarea id="playlist-desc-input" rows="3" placeholder="Tambahkan sedikit catatan..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" data-close-modal="create-playlist-modal">Batal</button>
+        <button class="btn-primary" id="save-new-playlist-btn">Buat Playlist</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SLEEP TIMER -->
+  <div class="modal-backdrop" id="sleep-timer-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i data-lucide="moon"></i> Pengatur Waktu Tidur (Sleep Timer)</h3>
+        <button class="icon-btn modal-close-btn" data-close-modal="sleep-timer-modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Musik akan berhenti secara otomatis setelah durasi waktu yang Anda tentukan.</p>
+        <div class="sleep-timer-options">
+          <button class="timer-option-btn" data-minutes="15">15 Menit</button>
+          <button class="timer-option-btn" data-minutes="30">30 Menit</button>
+          <button class="timer-option-btn" data-minutes="45">45 Menit</button>
+          <button class="timer-option-btn" data-minutes="60">1 Jam (60 Menit)</button>
+          <button class="timer-option-btn" data-minutes="end_of_track">Akhir Lagu Ini</button>
+          <button class="timer-option-btn cancel-timer" data-minutes="0" id="cancel-sleep-timer-btn" style="display: none;">Matikan Timer</button>
+        </div>
+        <div class="timer-active-badge" id="timer-active-badge" style="display: none;">
+          <i data-lucide="clock"></i>
+          <span>Timer aktif: berhenti dalam <strong id="timer-countdown-text">--:--</strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: KEYBOARD SHORTCUTS -->
+  <div class="modal-backdrop" id="shortcuts-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i data-lucide="keyboard"></i> Pintasan Keyboard (Hotkeys)</h3>
+        <button class="icon-btn modal-close-btn" data-close-modal="shortcuts-modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="shortcuts-grid">
+          <div class="shortcut-row"><kbd>Spasi</kbd> <span>Play / Pause</span></div>
+          <div class="shortcut-row"><kbd>Panah Kanan</kbd> <span>Maju 5 Detik</span></div>
+          <div class="shortcut-row"><kbd>Panah Kiri</kbd> <span>Mundur 5 Detik</span></div>
+          <div class="shortcut-row"><kbd>Panah Atas</kbd> <span>Naikkan Volume</span></div>
+          <div class="shortcut-row"><kbd>Panah Bawah</kbd> <span>Turunkan Volume</span></div>
+          <div class="shortcut-row"><kbd>M</kbd> <span>Mute / Suarakan</span></div>
+          <div class="shortcut-row"><kbd>L</kbd> <span>Buka / Tutup Lirik</span></div>
+          <div class="shortcut-row"><kbd>F</kbd> <span>Fullscreen Player</span></div>
+          <div class="shortcut-row"><kbd>Q</kbd> <span>Buka Antrean</span></div>
+          <div class="shortcut-row"><kbd>/</kbd> <span>Fokus ke Kotak Pencarian</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HIDDEN AUDIO ENGINE ELEMENT -->
+  <audio id="global-audio-player" preload="metadata" crossorigin="anonymous"></audio>
+
+  <!-- JAVASCRIPT MODULES -->
+  <script src="js/storage/database.js"></script>
+  <script src="js/api/lyricsApi.js"></script>
+  <script src="js/api/musicApi.js"></script>
+  <script src="js/player/queue.js"></script>
+  <script src="js/player/audioEngine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
