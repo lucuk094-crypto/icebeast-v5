@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "outputDirectory": "web",
   "cleanUrls": true,
   "headers": [
     {
@@ -14,16 +14,6 @@
           "value": "GET, OPTIONS, POST"
         }
       ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/",
-      "destination": "/web/index.html"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/web/$1"
     }
   ]
 }
