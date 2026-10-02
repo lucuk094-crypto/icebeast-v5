@@ -34,6 +34,7 @@ class IceBeatsApp {
     this.initSettings();
     this.initKeyboardShortcuts();
     this.initModals();
+    this.initHeroCarousel();
 
     // Load initial feed
     await this.loadHomeFeed();
@@ -102,6 +103,37 @@ class IceBeatsApp {
     if (window.lucide) window.lucide.createIcons();
   }
 
+  /* --- HERO CAROUSEL AUTO-ROTATION --- */
+  initHeroCarousel() {
+    this._heroSlideIndex = 0;
+    this._heroSlideCount = 0;
+    this._heroCarouselInterval = null;
+  }
+
+  startHeroCarousel(count) {
+    this._heroSlideCount = count;
+    this._heroSlideIndex = 0;
+    if (this._heroCarouselInterval) clearInterval(this._heroCarouselInterval);
+    this._heroCarouselInterval = setInterval(() => {
+      this._heroSlideIndex = (this._heroSlideIndex + 1) % this._heroSlideCount;
+      this.goToHeroSlide(this._heroSlideIndex);
+    }, 5000);
+  }
+
+  goToHeroSlide(idx) {
+    const heroTrack = document.getElementById('hero-track');
+    const heroDots = document.getElementById('hero-dots');
+    if (!heroTrack) return;
+
+    heroTrack.style.transform = `translateX(-${idx * 100}%)`;
+
+    if (heroDots) {
+      heroDots.querySelectorAll('.hero-dot').forEach((d, i) => {
+        d.classList.toggle('active', i === idx);
+      });
+    }
+  }
+
   /* --- 2. HOME FEED & CAROUSEL --- */
   async loadHomeFeed() {
     const heroTrack = document.getElementById('hero-track');
@@ -136,10 +168,20 @@ class IceBeatsApp {
           </div>
         `).join('');
 
+
         if (heroDots) {
           heroDots.innerHTML = heroSlides.map((_, i) => `
             <div class="hero-dot ${i === 0 ? 'active' : ''}" data-slide="${i}"></div>
           `).join('');
+
+          heroDots.querySelectorAll('.hero-dot').forEach((dot, i) => {
+            dot.addEventListener('click', () => {
+              this._heroSlideIndex = i;
+              this.goToHeroSlide(i);
+              // Restart auto-rotation
+              this.startHeroCarousel(heroSlides.length);
+            });
+          });
         }
 
         // Attach hero play buttons
@@ -153,6 +195,9 @@ class IceBeatsApp {
             }
           });
         });
+
+        // Start auto-rotation
+        this.startHeroCarousel(heroSlides.length);
       }
 
       // 2. Populate Quick Picks Grid
@@ -803,6 +848,65 @@ class IceBeatsApp {
         window.audioEngine.setPlaybackRate(speeds[speedIdx]);
       });
     }
+
+    // Full Player Tab Switching (Lyrics / Queue)
+    const lyricsTab = document.getElementById('fp-view-lyrics-tab');
+    const queueTab = document.getElementById('fp-view-queue-tab');
+    const lyricsContainer = document.getElementById('lyrics-view-container');
+    const inlineQueue = document.getElementById('fp-inline-queue');
+
+    if (lyricsTab) {
+      lyricsTab.addEventListener('click', () => {
+        lyricsTab.classList.add('active');
+        if (queueTab) queueTab.classList.remove('active');
+        if (lyricsContainer) lyricsContainer.style.display = 'flex';
+        if (inlineQueue) inlineQueue.style.display = 'none';
+      });
+    }
+
+    if (queueTab) {
+      queueTab.addEventListener('click', () => {
+        queueTab.classList.add('active');
+        if (lyricsTab) lyricsTab.classList.remove('active');
+        if (inlineQueue) inlineQueue.style.display = 'block';
+        if (lyricsContainer) lyricsContainer.style.display = 'none';
+        // Populate inline queue list
+        this.renderInlineQueue();
+      });
+    }
+  }
+
+  renderInlineQueue() {
+    const list = document.getElementById('fp-inline-queue-list');
+    if (!list) return;
+    const q = window.queue.queue;
+    const idx = window.queue.currentIndex;
+    const upNext = q.slice(idx + 1);
+    if (upNext.length === 0) {
+      list.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem; padding: 1rem 0;">Tidak ada lagu berikutnya.</p>`;
+    } else {
+      list.innerHTML = upNext.map((t, i) => `
+        <div class="q-item" data-fp-q-idx="${idx + 1 + i}">
+          <img src="${t.thumbnail}" alt="${t.title}">
+          <div class="q-meta">
+            <span class="q-title">${t.title}</span>
+            <span class="q-artist">${t.artist}</span>
+          </div>
+        </div>
+      `).join('');
+
+      list.querySelectorAll('.q-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const qIdx = parseInt(item.getAttribute('data-fp-q-idx'), 10);
+          const track = window.queue.queue[qIdx];
+          if (track) {
+            window.queue.currentIndex = qIdx;
+            window.audioEngine.playTrack(track);
+          }
+        });
+      });
+    }
+    if (window.lucide) window.lucide.createIcons();
   }
 
   /* --- 7. LIVE KARAOKE LYRICS SYNC --- */
@@ -1112,6 +1216,42 @@ class IceBeatsApp {
       themeSel.addEventListener('change', (e) => this.setTheme(e.target.value));
     }
 
+    // Visualizer toggle
+    const vizToggle = document.getElementById('toggle-visualizer');
+    if (vizToggle) {
+      vizToggle.addEventListener('change', () => {
+        if (window.audioEngine) {
+          window.audioEngine.isVisualizerActive = vizToggle.checked;
+          const canvas = document.getElementById('visualizer-canvas');
+          if (canvas) canvas.style.display = vizToggle.checked ? 'block' : 'none';
+          if (vizToggle.checked && window.audioEngine.analyser) {
+            window.audioEngine.renderVisualizerFrame();
+          }
+        }
+      });
+    }
+
+    // Dynamic color toggle
+    const colorToggle = document.getElementById('toggle-dynamic-color');
+    if (colorToggle) {
+      colorToggle.addEventListener('change', () => {
+        if (!colorToggle.checked) {
+          const ambient = document.getElementById('ambient-glow');
+          if (ambient) ambient.style.background = '';
+        } else if (window.audioEngine && window.audioEngine.currentTrack) {
+          window.audioEngine.extractDynamicColor(window.audioEngine.currentTrack.thumbnail);
+        }
+      });
+    }
+
+    // Playback speed setting
+    const speedSel = document.getElementById('settings-playback-speed');
+    if (speedSel) {
+      speedSel.addEventListener('change', (e) => {
+        if (window.audioEngine) window.audioEngine.setPlaybackRate(parseFloat(e.target.value));
+      });
+    }
+
     const resetBtn = document.getElementById('reset-db-btn');
     if (resetBtn) {
       resetBtn.addEventListener('click', async () => {
@@ -1156,22 +1296,24 @@ class IceBeatsApp {
           window.audioEngine.toggleMute();
           break;
         case 'KeyL':
+        case 'KeyF': {
           e.preventDefault();
-          document.getElementById('open-full-player-trigger').click();
+          const trigger = document.getElementById('open-full-player-trigger');
+          if (trigger) trigger.click();
           break;
-        case 'KeyF':
+        }
+        case 'KeyQ': {
           e.preventDefault();
-          document.getElementById('open-full-player-trigger').click();
+          const queueBtn = document.getElementById('toggle-queue-btn');
+          if (queueBtn) queueBtn.click();
           break;
-        case 'KeyQ':
-          e.preventDefault();
-          document.getElementById('toggle-queue-btn').click();
-          break;
-        case 'Slash':
+        }
+        case 'Slash': {
           e.preventDefault();
           const searchInput = document.getElementById('global-search-input');
           if (searchInput) searchInput.focus();
           break;
+        }
       }
     });
   }
@@ -1201,6 +1343,38 @@ class IceBeatsApp {
           window.audioEngine.setSleepTimer(mins);
           sleepModal.style.display = 'none';
         });
+      });
+    }
+
+    // Create Playlist Modal
+    const createPlaylistBtn = document.getElementById('create-playlist-btn');
+    const createPlaylistModal = document.getElementById('create-playlist-modal');
+    if (createPlaylistBtn && createPlaylistModal) {
+      createPlaylistBtn.addEventListener('click', () => {
+        createPlaylistModal.style.display = 'flex';
+      });
+    }
+
+    // Save New Playlist
+    const savePlaylistBtn = document.getElementById('save-new-playlist-btn');
+    if (savePlaylistBtn) {
+      savePlaylistBtn.addEventListener('click', async () => {
+        const nameInput = document.getElementById('playlist-name-input');
+        const descInput = document.getElementById('playlist-desc-input');
+        const name = nameInput ? nameInput.value.trim() : '';
+        const desc = descInput ? descInput.value.trim() : '';
+        if (!name) {
+          window.showToast('Nama playlist tidak boleh kosong', 'alert-circle');
+          return;
+        }
+        if (window.db) {
+          await window.db.createPlaylist(name, desc);
+          window.showToast(`Playlist "${name}" berhasil dibuat!`, 'list-music');
+          if (createPlaylistModal) createPlaylistModal.style.display = 'none';
+          if (nameInput) nameInput.value = '';
+          if (descInput) descInput.value = '';
+          await this.loadPlaylistsView();
+        }
       });
     }
 

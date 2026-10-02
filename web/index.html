@@ -828,7 +828,15 @@
   </div>
 
   <!-- HIDDEN AUDIO ENGINE ELEMENT -->
-  <audio id="global-audio-player" preload="metadata" crossorigin="anonymous"></audio>
+  <audio id="global-audio-player" preload="metadata"></audio>
+
+  <!-- YOUTUBE IFRAME PLAYER ENGINE -->
+  <div id="yt-player-host" style="position:fixed; bottom:-9999px; left:-9999px; width:200px; height:200px; opacity:0; pointer-events:none; z-index:-1000;">
+    <div id="youtube-player"></div>
+  </div>
+
+  <!-- YOUTUBE IFRAME API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
 
   <!-- JAVASCRIPT MODULES -->
   <script src="js/storage/database.js"></script>

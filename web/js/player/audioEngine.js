@@ -1,6 +1,7 @@
 /**
  * IceBeats Web — Core Audio Engine & Visualizer
- * Manages HTML5 Audio, Web Audio API context, MediaSession, Sleep Timer & Dynamic Color Extraction.
+ * Dual-Engine: Seamlessly supports YouTube IFrame Player API & HTML5 Audio (Blob/Direct Stream).
+ * Includes Web Audio API visualizer, MediaSession, Sleep Timer & Dynamic Color Extraction.
  */
 
 class AudioEngine {
@@ -14,6 +15,13 @@ class AudioEngine {
     this.sleepTimer = null;
     this.sleepEndTime = null;
 
+    // Active Engine: 'audio' | 'youtube'
+    this.activeEngine = 'youtube';
+    this.ytPlayer = null;
+    this.isYtReady = false;
+    this.ytTicker = null;
+    this.pendingYtTrack = null;
+
     // Web Audio API & Visualizer nodes
     this.audioCtx = null;
     this.analyser = null;
@@ -24,8 +32,111 @@ class AudioEngine {
 
     this.initAudioEvents();
     this.initMediaSession();
+
+    // Check if YouTube API is already loaded
+    if (window.YT && window.YT.Player) {
+      this.initYouTubePlayer();
+    }
   }
 
+  /* --- YOUTUBE IFRAME PLAYER ENGINE --- */
+  initYouTubePlayer() {
+    if (this.ytPlayer || !window.YT || !window.YT.Player) return;
+    try {
+      this.ytPlayer = new window.YT.Player('youtube-player', {
+        height: '200',
+        width: '200',
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1,
+          rel: 0,
+          playsinline: 1
+        },
+        events: {
+          onReady: () => {
+            this.isYtReady = true;
+            try {
+              this.ytPlayer.setVolume(this.volume * 100);
+            } catch (e) {}
+
+            if (this.pendingYtTrack) {
+              const track = this.pendingYtTrack;
+              this.pendingYtTrack = null;
+              this.playTrack(track);
+            }
+          },
+          onStateChange: (event) => {
+            this.handleYtStateChange(event.data);
+          },
+          onError: (event) => {
+            console.warn('YouTube Player error code:', event.data);
+            window.showToast('Lagu tidak tersedia, mencoba lagu berikutnya...', 'alert-circle');
+            setTimeout(() => this.playNextTrack(), 1500);
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('YouTube Player initialization failed:', e);
+    }
+  }
+
+  handleYtStateChange(state) {
+    if (!window.YT) return;
+    if (state === window.YT.PlayerState.PLAYING) {
+      this.isPlaying = true;
+      this.updatePlayStateUI(true);
+      this.startYtTicker();
+      if (this.isVisualizerActive && this.canvasCtx) {
+        this.renderVisualizerFrame();
+      }
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+    } else if (state === window.YT.PlayerState.PAUSED) {
+      this.isPlaying = false;
+      this.updatePlayStateUI(false);
+      this.stopYtTicker();
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+    } else if (state === window.YT.PlayerState.ENDED) {
+      this.stopYtTicker();
+      this.onTrackEnded();
+    }
+  }
+
+  startYtTicker() {
+    this.stopYtTicker();
+    this.ytTicker = setInterval(() => {
+      if (this.activeEngine !== 'youtube' || !this.ytPlayer || !this.isYtReady) return;
+      try {
+        const current = this.ytPlayer.getCurrentTime() || 0;
+        const duration = this.ytPlayer.getDuration() || (this.currentTrack ? this.currentTrack.duration : 0);
+        this.updateScrubber(current, duration);
+
+        window.dispatchEvent(new CustomEvent('icebeats:timeupdate', {
+          detail: { currentTime: current, duration: duration }
+        }));
+      } catch (e) {}
+    }, 250);
+  }
+
+  stopYtTicker() {
+    if (this.ytTicker) {
+      clearInterval(this.ytTicker);
+      this.ytTicker = null;
+    }
+  }
+
+  stopYouTube() {
+    this.stopYtTicker();
+    if (this.ytPlayer && this.isYtReady) {
+      try {
+        this.ytPlayer.stopVideo();
+      } catch (e) {}
+    }
+  }
+
+  /* --- HTML5 AUDIO ENGINE EVENTS --- */
   initAudioEvents() {
     if (!this.audio) return;
 
@@ -45,6 +156,7 @@ class AudioEngine {
     });
 
     this.audio.addEventListener('timeupdate', () => {
+      if (this.activeEngine !== 'audio') return;
       const current = this.audio.currentTime;
       const duration = this.audio.duration || (this.currentTrack ? this.currentTrack.duration : 0);
       this.updateScrubber(current, duration);
@@ -66,18 +178,22 @@ class AudioEngine {
     });
 
     this.audio.addEventListener('ended', () => {
-      this.onTrackEnded();
+      if (this.activeEngine === 'audio') {
+        this.onTrackEnded();
+      }
     });
 
     this.audio.addEventListener('error', (e) => {
-      console.warn('Audio stream error, attempting next queue track...', e);
-      window.showToast('Mencoba stream cadangan...', 'alert-circle');
-      setTimeout(() => this.playNextTrack(), 1000);
+      if (this.activeEngine === 'audio') {
+        console.warn('Audio stream error, attempting next queue track...', e);
+        window.showToast('Gagal memuat stream, mencoba lagu berikutnya...', 'alert-circle');
+        setTimeout(() => this.playNextTrack(), 1000);
+      }
     });
   }
 
   /**
-   * Load and play a track
+   * Load and play a track seamlessly
    */
   async playTrack(track) {
     if (!track) return;
@@ -97,30 +213,94 @@ class AudioEngine {
     // 4. Fetch & Load Lyrics
     window.dispatchEvent(new CustomEvent('icebeats:loadlyrics', { detail: track }));
 
-    // 5. Resolve Audio Stream URL
     window.showToast(`Memutar "${track.title}"`, 'music');
+
+    // Case A: Local file track (blob URL)
+    if (track.isLocal && track.audioUrl) {
+      this.stopYouTube();
+      this.activeEngine = 'audio';
+      try {
+        this.audio.src = track.audioUrl;
+        this.audio.playbackRate = this.playbackRate;
+        await this.audio.play();
+        this.updateMediaSessionMetadata(track);
+      } catch (err) {
+        console.error('Local file play failed:', err);
+        window.showToast('Gagal memutar file lokal', 'alert-triangle');
+      }
+      return;
+    }
+
+    // Case B: YouTube track with videoId (Default & Guaranteed 100% Reliable Playback)
+    const videoId = track.videoId || track.id;
+    if (videoId && (!track.audioUrl || track.source === 'youtube')) {
+      if (this.audio) this.audio.pause();
+      this.activeEngine = 'youtube';
+
+      if (this.ytPlayer && this.isYtReady) {
+        try {
+          this.ytPlayer.loadVideoById(videoId);
+          this.ytPlayer.playVideo();
+          this.isPlaying = true;
+          this.updatePlayStateUI(true);
+          this.startYtTicker();
+          this.updateMediaSessionMetadata(track);
+          return;
+        } catch (e) {
+          console.warn('YT loadVideoById failed:', e);
+        }
+      } else {
+        this.pendingYtTrack = track;
+        if (window.YT && window.YT.Player) {
+          this.initYouTubePlayer();
+        }
+      }
+    }
+
+    // Case C: Track with direct audioUrl (e.g. preview from iTunes)
+    if (track.audioUrl) {
+      this.stopYouTube();
+      this.activeEngine = 'audio';
+      try {
+        this.audio.src = track.audioUrl;
+        this.audio.playbackRate = this.playbackRate;
+        await this.audio.play();
+        this.updateMediaSessionMetadata(track);
+        return;
+      } catch (err) {
+        console.warn('Audio URL playback failed:', err);
+      }
+    }
+
+    // Case D: Fallback stream resolution
     try {
-      const streamInfo = await window.musicApi.getStreamUrl(track.videoId || track.id);
-      
-      if (streamInfo && streamInfo.audioUrl) {
+      const streamInfo = await window.musicApi.getStreamUrl(videoId);
+      if (streamInfo && streamInfo.audioUrl && !streamInfo.isEmbed) {
+        this.stopYouTube();
+        this.activeEngine = 'audio';
         this.audio.src = streamInfo.audioUrl;
         this.audio.playbackRate = this.playbackRate;
         await this.audio.play();
-      } else {
-        throw new Error('Stream URL unavailable');
+        this.updateMediaSessionMetadata(track);
+        return;
       }
     } catch (err) {
-      console.error('Play track failed:', err);
-      window.showToast('Gagal memuat audio, melewati ke lagu berikutnya...', 'alert-triangle');
-      setTimeout(() => this.playNextTrack(), 1500);
+      console.warn('Stream resolution fallback failed:', err);
+    }
+
+    // Final fallback: If YouTube is ready, load video ID
+    if (videoId && this.ytPlayer && this.isYtReady) {
+      this.activeEngine = 'youtube';
+      this.ytPlayer.loadVideoById(videoId);
+      this.ytPlayer.playVideo();
+      this.startYtTicker();
     }
 
     this.updateMediaSessionMetadata(track);
   }
 
   togglePlay() {
-    if (!this.audio.src || !this.currentTrack) {
-      // Play first item from queue if available
+    if (!this.currentTrack) {
       const first = window.queue.getCurrentTrack();
       if (first) {
         this.playTrack(first);
@@ -128,49 +308,95 @@ class AudioEngine {
       return;
     }
 
-    if (this.audio.paused) {
-      this.audio.play().catch(console.error);
-    } else {
-      this.audio.pause();
+    if (this.activeEngine === 'youtube' && this.ytPlayer && this.isYtReady) {
+      try {
+        const state = this.ytPlayer.getPlayerState();
+        if (state === (window.YT ? window.YT.PlayerState.PLAYING : 1)) {
+          this.ytPlayer.pauseVideo();
+        } else {
+          this.ytPlayer.playVideo();
+        }
+      } catch (e) {
+        this.ytPlayer.playVideo();
+      }
+    } else if (this.audio) {
+      if (this.audio.paused) {
+        this.audio.play().catch(console.error);
+      } else {
+        this.audio.pause();
+      }
     }
   }
 
   pause() {
-    this.audio.pause();
+    if (this.activeEngine === 'youtube' && this.ytPlayer && this.isYtReady) {
+      try { this.ytPlayer.pauseVideo(); } catch (e) {}
+    } else if (this.audio) {
+      this.audio.pause();
+    }
   }
 
   resume() {
-    this.audio.play().catch(console.error);
+    if (this.activeEngine === 'youtube' && this.ytPlayer && this.isYtReady) {
+      try { this.ytPlayer.playVideo(); } catch (e) {}
+    } else if (this.audio) {
+      this.audio.play().catch(console.error);
+    }
   }
 
   seek(seconds) {
-    if (this.audio && !isNaN(seconds)) {
+    if (this.activeEngine === 'youtube' && this.ytPlayer && this.isYtReady) {
+      try { this.ytPlayer.seekTo(seconds, true); } catch (e) {}
+    } else if (this.audio && !isNaN(seconds)) {
       this.audio.currentTime = Math.max(0, Math.min(seconds, this.audio.duration || 9999));
     }
   }
 
   seekPercent(percent) {
-    if (this.audio && this.audio.duration) {
-      const target = (percent / 100) * this.audio.duration;
+    let duration = 0;
+    if (this.activeEngine === 'youtube' && this.ytPlayer && this.isYtReady) {
+      try {
+        duration = this.ytPlayer.getDuration() || (this.currentTrack ? this.currentTrack.duration : 0);
+      } catch (e) {}
+    } else if (this.audio) {
+      duration = this.audio.duration || (this.currentTrack ? this.currentTrack.duration : 0);
+    }
+
+    if (duration > 0) {
+      const target = (percent / 100) * duration;
       this.seek(target);
     }
   }
 
   setVolume(val) {
     this.volume = Math.max(0, Math.min(1, val));
-    this.audio.volume = this.volume;
+    if (this.audio) this.audio.volume = this.volume;
+    if (this.ytPlayer && this.isYtReady) {
+      try {
+        this.ytPlayer.setVolume(this.volume * 100);
+      } catch (e) {}
+    }
     this.updateVolumeUI();
   }
 
   toggleMute() {
     this.isMuted = !this.isMuted;
-    this.audio.muted = this.isMuted;
+    if (this.audio) this.audio.muted = this.isMuted;
+    if (this.ytPlayer && this.isYtReady) {
+      try {
+        if (this.isMuted) this.ytPlayer.mute();
+        else this.ytPlayer.unMute();
+      } catch (e) {}
+    }
     this.updateVolumeUI();
   }
 
   setPlaybackRate(rate) {
     this.playbackRate = rate;
-    this.audio.playbackRate = rate;
+    if (this.audio) this.audio.playbackRate = rate;
+    if (this.ytPlayer && this.isYtReady) {
+      try { this.ytPlayer.setPlaybackRate(rate); } catch (e) {}
+    }
     const label = document.getElementById('fp-speed-label');
     if (label) label.textContent = `${rate}x`;
   }
@@ -185,7 +411,14 @@ class AudioEngine {
   }
 
   playPreviousTrack() {
-    if (this.audio.currentTime > 4) {
+    let current = 0;
+    if (this.activeEngine === 'youtube' && this.ytPlayer && this.isYtReady) {
+      try { current = this.ytPlayer.getCurrentTime() || 0; } catch (e) {}
+    } else if (this.audio) {
+      current = this.audio.currentTime;
+    }
+
+    if (current > 4) {
       this.seek(0);
       return;
     }
@@ -217,10 +450,16 @@ class AudioEngine {
       if (details.seekTime) this.seek(details.seekTime);
     });
     navigator.mediaSession.setActionHandler('seekbackward', (details) => {
-      this.seek(this.audio.currentTime - (details.seekOffset || 5));
+      const cur = this.activeEngine === 'youtube' && this.ytPlayer && this.isYtReady
+        ? (this.ytPlayer.getCurrentTime() || 0)
+        : (this.audio.currentTime || 0);
+      this.seek(cur - (details.seekOffset || 5));
     });
     navigator.mediaSession.setActionHandler('seekforward', (details) => {
-      this.seek(this.audio.currentTime + (details.seekOffset || 5));
+      const cur = this.activeEngine === 'youtube' && this.ytPlayer && this.isYtReady
+        ? (this.ytPlayer.getCurrentTime() || 0)
+        : (this.audio.currentTime || 0);
+      this.seek(cur + (details.seekOffset || 5));
     });
   }
 
@@ -365,6 +604,7 @@ class AudioEngine {
 
   /* --- DYNAMIC COLOR EXTRACTION --- */
   extractDynamicColor(imgUrl) {
+    if (!imgUrl) return;
     const img = new Image();
     img.crossOrigin = 'Anonymous';
     img.src = imgUrl;
@@ -397,7 +637,7 @@ class AudioEngine {
           }
         }
       } catch (e) {
-        // CORS image fallback
+        // Fallback silently if canvas is tainted
       }
     };
   }
@@ -460,51 +700,104 @@ class AudioEngine {
     if (cancelBtn) cancelBtn.style.display = 'block';
   }
 
-  /* --- WEB AUDIO API VISUALIZER --- */
+  /* --- AUDIO VISUALIZER --- */
   initWebAudioContext() {
-    if (this.audioCtx) return;
+    if (this.audioCtx && this.sourceNode) return;
     try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      this.audioCtx = new AudioContext();
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtxClass) {
+        return;
+      }
+
+      if (!this.audioCtx) {
+        this.audioCtx = new AudioCtxClass();
+      }
+
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+
       this.analyser = this.audioCtx.createAnalyser();
       this.analyser.fftSize = 128;
 
-      this.sourceNode = this.audioCtx.createMediaElementSource(this.audio);
-      this.sourceNode.connect(this.analyser);
-      this.analyser.connect(this.audioCtx.destination);
+      if (!this.sourceNode && this.audio) {
+        this.sourceNode = this.audioCtx.createMediaElementSource(this.audio);
+        this.sourceNode.connect(this.analyser);
+        this.analyser.connect(this.audioCtx.destination);
+      }
 
-      this.renderVisualizerFrame();
+      if (this.canvasCtx) {
+        this.renderVisualizerFrame();
+      }
     } catch (e) {
-      console.warn('Web Audio API context restricted or not supported:', e);
+      console.warn('Web Audio API restricted or not supported:', e);
     }
   }
 
   renderVisualizerFrame() {
-    if (!this.analyser || !this.canvasCtx || !this.isVisualizerActive) return;
+    if (!this.canvasCtx || !this.isVisualizerActive) return;
+
+    if (!this.isPlaying) {
+      const ctx = this.canvasCtx;
+      ctx.clearRect(0, 0, this.visualizerCanvas.width, this.visualizerCanvas.height);
+      return;
+    }
 
     requestAnimationFrame(() => this.renderVisualizerFrame());
 
     const canvas = this.visualizerCanvas;
-    canvas.width = window.innerWidth;
-    canvas.height = 160;
-
-    const bufferLength = this.analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    this.analyser.getByteFrequencyData(dataArray);
+    if (canvas.width !== window.innerWidth) {
+      canvas.width = window.innerWidth;
+      canvas.height = 160;
+    }
 
     const ctx = this.canvasCtx;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const barWidth = (canvas.width / bufferLength) * 2;
-    let x = 0;
+    // If using HTML5 audio with AnalyserNode
+    if (this.activeEngine === 'audio' && this.analyser) {
+      const bufferLength = this.analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      this.analyser.getByteFrequencyData(dataArray);
 
-    for (let i = 0; i < bufferLength; i++) {
-      const barHeight = (dataArray[i] / 255) * canvas.height * 0.7;
-      ctx.fillStyle = `rgba(56, 189, 248, ${0.15 + (dataArray[i] / 255) * 0.4})`;
-      ctx.fillRect(x, canvas.height - barHeight, barWidth - 3, barHeight);
-      x += barWidth;
+      const barWidth = (canvas.width / bufferLength) * 2;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const barHeight = (dataArray[i] / 255) * canvas.height * 0.7;
+        ctx.fillStyle = `rgba(56, 189, 248, ${0.15 + (dataArray[i] / 255) * 0.4})`;
+        ctx.fillRect(x, canvas.height - barHeight, barWidth - 3, barHeight);
+        x += barWidth;
+      }
+    } else {
+      // Dynamic simulated spectrum for YouTube IFrame Engine
+      const bars = 48;
+      const barWidth = canvas.width / bars;
+      const time = Date.now() / 180;
+
+      for (let i = 0; i < bars; i++) {
+        const wave1 = Math.sin(time + i * 0.28);
+        const wave2 = Math.cos(time * 0.6 + i * 0.15);
+        const wave3 = Math.sin(time * 1.4 + i * 0.5);
+        const norm = Math.abs(wave1 * 0.4 + wave2 * 0.35 + wave3 * 0.25);
+        const barHeight = Math.max(8, norm * canvas.height * 0.65);
+
+        const gradient = ctx.createLinearGradient(0, canvas.height - barHeight, 0, canvas.height);
+        gradient.addColorStop(0, 'rgba(56, 189, 248, 0.7)');
+        gradient.addColorStop(1, 'rgba(99, 102, 241, 0.2)');
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(i * barWidth, canvas.height - barHeight, barWidth - 3, barHeight);
+      }
     }
   }
 }
+
+// Global YouTube Iframe API ready callback
+window.onYouTubeIframeAPIReady = function() {
+  if (window.audioEngine) {
+    window.audioEngine.initYouTubePlayer();
+  }
+};
 
 window.audioEngine = new AudioEngine();
